@@ -5,6 +5,7 @@ import pygame
 from settings import Settings
 from ship import Ship
 
+
 class AlienInvasion:
     """Загальний клас, що керує ресурсам та поведінкою гри"""
 
@@ -14,7 +15,7 @@ class AlienInvasion:
 
         self.settings = Settings()
 
-        self.screen = pygame.display.set_mode((self.settings.screen_width , self.settings.screen_height))
+        self.screen = pygame.display.set_mode((self.settings.screen_width, self.settings.screen_height))
         pygame.display.set_caption('Alien Invasion')
 
         self.ship = Ship(self)
@@ -30,10 +31,11 @@ class AlienInvasion:
                 self.screen.fill(self.settings.bg_color)
                 self.ship.blitme()
 
-                #Показувати останній намальований екран
+                # Показувати останній намальований екран
                 pygame.display.flip()
+                
 
 if __name__ == '__main__':
-    #Створити екземпляр гри та запустити гру
+    # Створити екземпляр гри та запустити гру
     ai = AlienInvasion()
     ai.run_game()
