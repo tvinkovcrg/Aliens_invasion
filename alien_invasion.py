@@ -26,6 +26,8 @@ class AlienInvasion:
         self.bullets = pygame.sprite.Group()
         self.aliens = pygame.sprite.Group()
 
+        self._create_fleet()
+
     def run_game(self):
         """Розпочати головний цикл гри"""
         while True:
@@ -33,6 +35,7 @@ class AlienInvasion:
             self._check_events()
             self.ship.update()
             self._update_bullets()
+            self._update_aliens()
             self._update_screen()
 
     def _check_events(self):
@@ -80,9 +83,57 @@ class AlienInvasion:
             if bullet.rect.bottom <= 0:
                 self.bullets.remove(bullet)
 
+    def _update_aliens(self):
+        """
+        Перевірити чи флот знаходиться на краю,
+        тоді оновити позиції всіх прибульців флоту
+        """
+        self._check_fleet_edges()
+        self.aliens.update()
+
+    def _check_fleet_edges(self):
+        """
+        Реагує відповідно до того, чи досяг
+        котрийсь з прибульців карю екрана
+        """
+        for alien in self.aliens.sprites():
+            if alien.check_edges():
+                self._change_fleet_direction()
+                break
+
+    def _change_fleet_direction(self):
+        """Спуск всього флоту та зміна його напрямку"""
+        for alien in self.aliens.sprites():
+            alien.rect.y += self.settings.fleet_drop_speed
+        self.settings.fleet_direction *= -1
+
     def _create_fleet(self):
         """Створити флот прибульців"""
-        alien = Alien()
+        # Створити прибульців та визначити кількість прибульців у ряду
+        # Відстань між прибульцями дорівнює ширині одного прибульця
+        alien = Alien(self)
+        alien_width, alien_height = alien.rect.size
+        avaible_space_x = self.settings.screen_width - (2 * alien_width)
+        number_aliens_x = avaible_space_x // (2 * alien_width)
+
+        # Визначити, яка кількість рядів прибульців поміщається на екрані
+        ship_height = self.ship.rect.height
+        avaible_space_y = (self.settings.screen_height - (3 * alien_height) - ship_height)
+        nuber_rows = avaible_space_y // (2 * alien_height)
+
+        # Створити повний флот прибульців
+        for row_number in range(nuber_rows):
+            for alien_number in range(number_aliens_x):
+                self._create_alien(alien_number, row_number)
+
+    def _create_alien(self, alien_number, row_number):
+        """Створити прибульця та поставити його до ряду"""
+        alien = Alien(self)
+        alien_width, alien_height = alien.rect.size
+        alien.x = alien_width + 2 * alien_width * alien_number
+        alien.rect.x = alien.x
+        alien.rect.y = alien.rect.height + 2 * alien.rect.height * row_number
+        self.aliens.add(alien)
 
     def _update_screen(self):
         """Оновити зображення на екрані та перемкнутися на новий екран"""
@@ -91,6 +142,7 @@ class AlienInvasion:
         self.ship.blitme()
         for bullet in self.bullets.sprites():
             bullet.draw_bullet()
+        self.aliens.draw(self.screen)
 
         # Показувати останній намальований екран
         pygame.display.flip()
