@@ -1,2 +1,2 @@
 # Alions_invasion
- Python game
+ Game programing on python with using pygame
