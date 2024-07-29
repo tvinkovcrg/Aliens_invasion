@@ -5,6 +5,7 @@ import pygame
 
 from settings import Settings
 from game_stats import GameStats
+from button import Button
 from ship import Ship
 from bullet import Bullet
 from alien import Alien
@@ -32,14 +33,18 @@ class AlienInvasion:
 
         self._create_fleet()
 
+        self.play_button = Button(self, "Play")
+
     def run_game(self):
         """Розпочати головний цикл гри"""
         while True:
             # Слідкувати за подіями миші та клавіатури
             self._check_events()
-            self.ship.update()
-            self._update_bullets()
-            self._update_aliens()
+            if self.stats.game_active:
+                self.ship.update()
+                self._update_bullets()
+                self._update_aliens()
+
             self._update_screen()
 
     def _check_events(self):
@@ -51,6 +56,28 @@ class AlienInvasion:
                 self._check_keydown_events(event)
             elif event.type == pygame.KEYUP:
                 self._check_keyup_events(event)
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                self._check_play_button(mouse_pos)
+
+    def _check_play_button(self, mouse_pos):
+        """Розпочати нову гру коли користувач натисне кнопку 'Play'"""
+        button_clicked = self.play_button.rect.collidepoint(mouse_pos)
+        if button_clicked and not self.stats.game_active:
+            # Recreate game statistic
+            self.stats.reset_stats()
+            self.stats.game_active = True
+
+            # Delete aliens and bullets
+            self.aliens.empty()
+            self.bullets.empty()
+
+            # Create new fleet and center ship
+            self._create_fleet()
+            self.ship.center_ship()
+
+            # Hide the mouse cursor
+            pygame.mouse.set_visible(False)
 
     def _check_keydown_events(self, event):
         """Реагування на натискання клавіш"""
@@ -111,21 +138,38 @@ class AlienInvasion:
         if pygame.sprite.spritecollideany(self.ship, self.aliens):
             self._ship_hit()
 
+        # Шукати чи котрийсь прибулець досяг низу екрану
+        self._check_aliens_bottom()
+
+    def _check_aliens_bottom(self):
+        """Перевірити чи не досяг якийсь прибулець нижнього краю екрану"""
+        screen_rect = self.screen.get_rect()
+        for alien in self.aliens.sprites():
+            if alien.rect.bottom >= screen_rect.bottom:
+                # Зреагувати так ніби корабель було підбито
+                self._ship_hit()
+                break
+
     def _ship_hit(self):
         """Реагувати на зіткнення прибульців з кораблем"""
-        # Зменшити ship_left
-        self.stats.ship_left -= 1
+        if self.stats.ship_left > 0:
+            # Зменшити ship_left
+            self.stats.ship_left -= 1
 
-        # delete bullets and aliens
-        self.aliens.empty()
-        self.bullets.empty()
+            # delete bullets and aliens
+            self.aliens.empty()
+            self.bullets.empty()
 
-        # create new fleet and respawn ship
-        self._create_fleet()
-        self.ship.center_ship
+            # create new fleet and respawn ship
+            self._create_fleet()
+            self.ship.center_ship()
 
-        # Pause
-        sleep(0.5)
+            # Pause
+            sleep(0.5)
+        else:
+            self.stats.game_active = False
+            print('Ship dead')
+            pygame.mouse.set_visible(True)
 
     def _check_fleet_edges(self):
         """
@@ -180,7 +224,10 @@ class AlienInvasion:
             bullet.draw_bullet()
         self.aliens.draw(self.screen)
 
-        # Показувати останній намальований екран
+        # Намалювати кнопку 'Play' якщо гра неактивна
+        if not self.stats.game_active:
+            self.play_button.draw_button()
+
         pygame.display.flip()
 
 
