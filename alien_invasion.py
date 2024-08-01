@@ -5,6 +5,7 @@ import pygame
 
 from settings import Settings
 from game_stats import GameStats
+from scoreboard import Scoreboard
 from button import Button
 from ship import Ship
 from bullet import Bullet
@@ -25,7 +26,9 @@ class AlienInvasion:
         self.settings.screen_height = self.screen.get_rect().height
         pygame.display.set_caption('Alien Invasion')
 
+        # Create (exeplar) for show game stats and scoreboard on the monitor
         self.stats = GameStats(self)
+        self.sb = Scoreboard(self)
 
         self.ship = Ship(self)
         self.bullets = pygame.sprite.Group()
@@ -65,8 +68,12 @@ class AlienInvasion:
         button_clicked = self.play_button.rect.collidepoint(mouse_pos)
         if button_clicked and not self.stats.game_active:
             # Recreate game statistic
+            self.settings.initialize_dynamic_settings()
             self.stats.reset_stats()
             self.stats.game_active = True
+            self.sb.prep_score()
+            self.sb.prep_level()
+            self.sb.prep_ships()
 
             # Delete aliens and bullets
             self.aliens.empty()
@@ -121,10 +128,21 @@ class AlienInvasion:
         # Видалити всі кулі та прибульців що зіткнулися
         collision = pygame.sprite.groupcollide(self.bullets, self.aliens, True, True)
 
+        if collision:
+            for aliens in collision.values():
+                self.stats.score += self.settings.alien_points * len(aliens)
+        self.sb.prep_score()
+        self.sb.check_high_score()
+
         if not self.aliens:
             # Знищити наявні кулі та створити новий флот
             self.bullets.empty()
             self._create_fleet()
+            self.settings.increase_speed()
+
+            # Up level
+            self.stats.level += 1
+            self.sb.prep_level()
 
     def _update_aliens(self):
         """
@@ -155,6 +173,7 @@ class AlienInvasion:
         if self.stats.ship_left > 0:
             # Зменшити ship_left
             self.stats.ship_left -= 1
+            self.sb.prep_ships()
 
             # delete bullets and aliens
             self.aliens.empty()
@@ -223,6 +242,9 @@ class AlienInvasion:
         for bullet in self.bullets.sprites():
             bullet.draw_bullet()
         self.aliens.draw(self.screen)
+
+        # Draw information about score
+        self.sb.show_score()
 
         # Намалювати кнопку 'Play' якщо гра неактивна
         if not self.stats.game_active:
