@@ -1,2 +1,2 @@
-# Alions_invasion
- Game programing on python with using pygame
+# Aliens_invasion
+ ---
